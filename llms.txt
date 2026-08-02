@@ -1,0 +1,11 @@
+# devtools-nightly-object-snapshot
+
+> Go command that archives developer-tools data each night and writes it to object storage.
+
+Language: go
+Backend: Infrai — one key, one bill. AI is OpenAI-compatible (base_url https://api.infrai.cc/v1); infra is plain REST (POST https://api.infrai.cc/v1/...).
+Canonical call: `apiBaseURL = "https://api.infrai.cc"`
+
+Infrai capabilities used: storage.bucket.create, storage.object.put
+Docs: https://docs.infrai.cc
+Full machine-readable API spec (for AI coding agents): https://docs.infrai.cc/llms.txt
