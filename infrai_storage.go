@@ -37,7 +37,7 @@ func NewClient() (*Client, error) {
 	return &Client{key: key, http: &http.Client{Timeout: 30 * time.Second}}, nil
 }
 
-func (c *Client) call(ctx context.Context, path string, body any, out any) error {
+func (c *Client) call(ctx context.Context, method, path string, body any, out any) error {
 	payload, err := json.Marshal(body)
 	if err != nil {
 		return err
@@ -45,7 +45,7 @@ func (c *Client) call(ctx context.Context, path string, body any, out any) error
 	requestKey := idempotencyKey(payload)
 
 	for attempt := 0; attempt < 4; attempt++ {
-		req, err := http.NewRequestWithContext(ctx, http.MethodPost, apiBaseURL+path, bytes.NewReader(payload))
+		req, err := http.NewRequestWithContext(ctx, method, apiBaseURL+path, bytes.NewReader(payload))
 		if err != nil {
 			return err
 		}
@@ -90,13 +90,13 @@ func (c *Client) call(ctx context.Context, path string, body any, out any) error
 
 func (c *Client) CreateBucket(ctx context.Context, bucket string) error {
 	var result json.RawMessage
-	return c.call(ctx, "/v1/storage/bucket/create", map[string]string{"bucket": bucket}, &result)
+	return c.call(ctx, http.MethodPost, "/v1/storage/bucket/create", map[string]string{"name": bucket}, &result)
 }
 
 func (c *Client) PutObject(ctx context.Context, bucket, key string, content []byte) error {
 	var result json.RawMessage
 	body := map[string]string{"data_base64": base64.StdEncoding.EncodeToString(content)}
-	return c.call(ctx, "/v1/storage/object/put/"+bucket+"/"+key, body, &result)
+	return c.call(ctx, http.MethodPut, "/v1/storage/object/put/"+bucket+"/"+key, body, &result)
 }
 
 func retryDelay(retryAfter string, attempt int) time.Duration {

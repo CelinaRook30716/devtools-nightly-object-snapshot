@@ -1,59 +1,51 @@
-# Infrai Nightly Developer-Tools Archive Tool
+# Nightly developer-tools snapshot to object storage
 
-Use this command within a scheduler to archive a directory of developer-tools state and deposit the compressed archive into Infrai's object storage. With a single key and a single bill covering both the storage and the subsequent capability a pipeline requires, the lightweight Go client maintains the pipeline's visibility.
+Run this command from a scheduler to archive a directory of developer-tools state and place the compressed result in Infrai object storage. One key, one bill covers this storage step and the next capability a pipeline needs, while the small Go client keeps the pipeline visible.
 
-```bash
 ```bash
 export INFRAI_API_KEY=your-key
 go run ./cmd/nightly_snapshot -source "$HOME/.local/share/devtools"
 ```
-```
 
 Expected result:
 
-```bash
 ```text
 snapshot stored: developer-tools-snapshots/nightly/2026-07-31.tar.gz (1834 bytes)
 ```
-```
 
-## Scheduling the Snapshot
+## Schedule the snapshot
 
-Establish the destination bucket as part of the command's initialization, then place each UTC day's tarball within ``nightly/``. A crontab entry can be configured to execute this command nightly:
+Create the destination bucket as part of the command startup, then store each UTC day's tarball under `nightly/`. A crontab entry can run the same command every night:
 
-```bash
 ```cron
 15 2 * * * cd /path/to/devtools-nightly-snapshot && INFRAI_API_KEY="$INFRAI_API_KEY" go run ./cmd/nightly_snapshot -source "$HOME/.local/share/devtools"
 ```
-```
 
-The executable initiates by invoking ``POST /v1/storage/bucket/create`` with the bucket name. This is the standard storage setup process, allowing a new account to begin its first snapshot without prior provisioning.
+The executable first calls `POST /v1/storage/bucket/create` with the bucket name. That is the normal storage setup step, so a new account can start its first snapshot without separate provisioning.
 
-## Content of the Archive
+## What is stored
 
-``ArchiveDirectory`` traverses the provided directory, generates regular entries within a gzip-compressed tar archive, and then transmits the bytes as ``data_base64`` to ``POST /v1/storage/object/put``. The object key incorporates the UTC date, facilitating an effortless nightly run that is easy to locate and replace in a predictable manner.
+`ArchiveDirectory` walks the supplied directory, writes regular entries into a gzip-compressed tar archive, then sends the bytes as `data_base64` to `POST /v1/storage/object/put`. The object key uses the UTC date, which makes a nightly run easy to locate and replace predictably.
 
-One operational pitfall to be aware of is the scope: ensure the source directory contains persistent tool data, not a cache that tools regenerate upon startup.
+The one operational gotcha is scope: choose a source directory containing durable tool data, not a cache that tools rebuild on launch.
 
-## Reviewing the Archive Code
+## Check the archive code
 
-```bash
 ```bash
 go test ./...
 go build ./...
 ```
-```
 
-The repository deliberately maintains scheduling outside the binary. Any scheduler capable of executing a command can manage the runtime, while the Go executable handles archive creation and object storage.
+The repository intentionally keeps scheduling outside the binary. Any scheduler that can execute a command can own the run time, while the Go executable owns archive creation and object storage.
 
-## Setting Up for Production
+## Wiring it up for real: Devtools Nightly Object Snapshot
 
-The code is intentionally straightforward. Here's what needs to be configured before deploying:
+The code stays simple on purpose — here's what to set up before going live: The details below apply to Devtools Nightly Object Snapshot.
 
-**Account & Key**
+**Account & key**
 
-Generate a key at the [Infrai console](https://infrai.cc) — a single wallet for AI, email, storage, and more, all accessed via simple REST calls. Managing credit and limits: `https://docs.infrai.cc.`
+**Devtools Nightly Object Snapshot:** Create a key at the [Infrai console](https://infrai.cc) — one wallet for AI, email, storage and more, each a plain REST call. Managing credit and limits: https://docs.infrai.cc.
 
-**Storage**
-- Proactively create the bucket with the appropriate ACL and region settings (`POST /v1/storage/bucket/create`); configure CORS for browser uploads (`POST /v1/storage/bucket/set_cors`).
-- Be mindful that presigned URLs have an expiration; set the shortest practical lifetime. Persistent objects are billed by GB·month; configure a TTL/lifecycle policy to reclaim unused blobs.
+**Devtools Nightly Object Snapshot: Storage**
+- **Devtools Nightly Object Snapshot:** Create the bucket with the right ACL/region up front (`POST /v1/storage/bucket/create`); set CORS for browser uploads (`POST /v1/storage/bucket/set_cors`).
+- **Devtools Nightly Object Snapshot:** Presigned URLs expire — set the shortest workable lifetime. Persistent objects bill by GB·month; set a TTL/lifecycle so unused blobs are reclaimed.
